@@ -1,0 +1,69 @@
+# Build MarkStep (md2rtf) on OPENSTEP 4.2 (gcc 2.7.2).  Works with NeXT make or GNU make.
+#
+#   make -f Makefile.openstep test      # FIRST: the unit tests and the CommonMark examples on the real compiler
+#   make -f Makefile.openstep           # build md2rtf
+#   make -f Makefile.openstep install   # md2rtf into /usr/local/bin (see below)
+#   make -f Makefile.openstep fat       # md2rtf as an i386+m68k+sparc fat binary
+#   make -f Makefile.openstep clean
+#
+# No GNU-make features are used (no wildcard, no pattern rules) so the stock NeXT make can read it.  Object files are
+# written next to their sources.  The tests read tests/spec_cases.txt, so run `test` from this directory.
+#
+# Nothing in this file has been run on real OPENSTEP hardware yet: report back exactly what happens.
+
+CC       = cc
+OPT      = -O
+DEFS     = -DOPENSTEP
+ARCHS    =                        # e.g. -arch i386 -arch m68k -arch sparc
+CFLAGS   = $(OPT) -Wall $(DEFS) $(ARCHS) -Icore
+VERSION  = 0.1.0
+BINDIR   = /usr/local/bin
+
+CORE_OBJS = core/md.o core/md_util.o core/md_block.o core/md_inline.o core/md_html.o core/md_rtf.o core/nsenc.o
+
+.SUFFIXES: .c .o
+
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+all: md2rtf
+
+md2rtf: $(CORE_OBJS) tools/md2rtf.o
+	$(CC) $(ARCHS) -o md2rtf tools/md2rtf.o $(CORE_OBJS)
+
+# ---- tests (plain C) ----
+# NOTE: OPENSTEP's mkdir has no -p option (it would create a directory named "-p").
+build/test_md: tests/test_md.c $(CORE_OBJS)
+	-mkdir build
+	$(CC) $(CFLAGS) -o build/test_md tests/test_md.c $(CORE_OBJS)
+
+build/spec_run: tests/spec_run.c $(CORE_OBJS)
+	-mkdir build
+	$(CC) $(CFLAGS) -o build/spec_run tests/spec_run.c $(CORE_OBJS)
+
+test: build/test_md build/spec_run
+	build/test_md
+	build/spec_run tests/spec_cases.txt tests/spec_known_failures.txt
+
+install: md2rtf
+	cp md2rtf $(BINDIR)/md2rtf
+	@echo "installed: $(BINDIR)/md2rtf"
+
+# One cc invocation per architecture, joined with lipo (NeXT's cc has no per-arch flag scoping, and objects are per-arch).
+fat:
+	rm -f core/*.o tools/*.o
+	$(MAKE) -f Makefile.openstep ARCHS="-arch i386" md2rtf
+	mv md2rtf md2rtf.i386
+	rm -f core/*.o tools/*.o
+	$(MAKE) -f Makefile.openstep ARCHS="-arch m68k" md2rtf
+	mv md2rtf md2rtf.m68k
+	rm -f core/*.o tools/*.o
+	$(MAKE) -f Makefile.openstep ARCHS="-arch sparc" md2rtf
+	mv md2rtf md2rtf.sparc
+	lipo -create md2rtf.i386 md2rtf.m68k md2rtf.sparc -output md2rtf
+	rm -f md2rtf.i386 md2rtf.m68k md2rtf.sparc core/*.o tools/*.o
+	@echo "built a fat md2rtf"
+
+clean:
+	rm -f core/*.o tools/*.o md2rtf md2rtf.i386 md2rtf.m68k md2rtf.sparc
+	rm -rf build

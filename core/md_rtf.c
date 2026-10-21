@@ -531,6 +531,7 @@ static void put_marker(R *r, const MdNode *list, const MdNode *item, int number,
 static void item_block(R *r, const MdNode *list, const MdNode *item, int number, int is_last, const Ctx *cx)
 {
     int mw = list->ordered ? 480 : 360;
+    int at_end = cx->depth == 0 ? is_last : (cx->last_in_top_list && is_last);    /* nothing follows the top-level list after this item */
     Ctx in;
     const MdNode *c = item->first_child;
 
@@ -538,9 +539,8 @@ static void item_block(R *r, const MdNode *list, const MdNode *item, int number,
     in.indent = cx->indent + mw;
     in.depth = cx->depth + 1;
     in.tight = list->tight;
-    in.last_in_top_list = (cx->depth == 0 && is_last);
     if (c != NULL && c->type == MD_PARAGRAPH) {
-        int sa = (list->tight && !(in.last_in_top_list && c->next == NULL)) ? 40 : 120;
+        int sa = (list->tight && !(at_end && c->next == NULL)) ? 40 : 120;
 
         para_open(r, in.indent, -mw, 0, sa, cx->quote, 0, r->fs_body);
         md_buf_puts(&r->b, "\\tx");
@@ -559,6 +559,7 @@ static void item_block(R *r, const MdNode *list, const MdNode *item, int number,
         para_close(r);
     }
     for (; c != NULL; c = c->next) {
+        in.last_in_top_list = at_end && c->next == NULL;
         block(r, c, &in);
     }
 }
@@ -582,8 +583,9 @@ static void block(R *r, const MdNode *n, const Ctx *cx)
         break;
     }
     case MD_BLOCKQUOTE: {
-        Ctx in = *cx;
+        Ctx in;
 
+        in = *cx;
         in.indent += TW_QUOTE;
         in.quote = 1;
         in.tight = 0;
@@ -593,8 +595,9 @@ static void block(R *r, const MdNode *n, const Ctx *cx)
     case MD_LIST: {
         const MdNode *item;
         int num = n->start, count = 0, idx = 0;
-        Ctx top = *cx;
+        Ctx top;
 
+        top = *cx;
         top.tight = 0;
         for (item = n->first_child; item != NULL; item = item->next) {
             count++;
