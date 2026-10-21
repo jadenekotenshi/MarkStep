@@ -1,0 +1,4 @@
+tests/spec_cases.txt is made from the CommonMark specification's examples (spec.json, version 0.31.2,
+https://spec.commonmark.org/), which are Copyright (c) John MacFarlane and the CommonMark contributors and licensed
+under CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). The examples are used here unchanged, only
+re-encoded into a simple length-prefixed text format that tests/spec_run.c reads. This notice applies to that file only.
