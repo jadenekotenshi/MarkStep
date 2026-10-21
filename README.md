@@ -3,7 +3,7 @@
 A Markdown parser (CommonMark 0.31.2 plus GFM tables, strikethrough and task lists) and a Markdown to RTF converter in
 portable C89, aimed at OPENSTEP 4.2: write or read Markdown, view it in Edit.app or OpenWrite (OpenWrite imports RTF).
 
-**Status: work in progress, host-tested only; nothing has run on OPENSTEP yet.** (No licence has been chosen yet; until one is added all rights are reserved.)
+**Status: work in progress, host-tested only; nothing has run on OPENSTEP yet.** MIT licensed (see `LICENSE`).
 
 - `core/` -- parser (`md_block.c`, `md_inline.c`), HTML renderer (for tests), RTF renderer (`md_rtf.c`), NeXTSTEP charset table.
 - `tools/md2rtf.c` -- the command-line filter: `md2rtf [options] [input.md]`, see its header for options
@@ -21,4 +21,4 @@ Not done yet: checking on real hardware that the code builds, and whether Edit.a
 references are known, a table is written as aligned monospaced text (no RTF table), and links are shown as "text (address)"
 because plain RTF has no hyperlinks.
 
-The CommonMark examples in `tests/spec_cases.txt` are (c) John MacFarlane and contributors, CC BY-SA 4.0: see `tests/SPEC-NOTICE.txt`.
+The code is under the MIT licence. The CommonMark examples in `tests/spec_cases.txt` are (c) John MacFarlane and contributors, CC BY-SA 4.0: see `tests/SPEC-NOTICE.txt`.
