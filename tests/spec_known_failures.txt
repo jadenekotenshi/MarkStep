@@ -1,0 +1,8 @@
+# CommonMark 0.31.2 examples this parser deliberately does not match (see the header of core/md.h).
+# Tabs are expanded to spaces before parsing, so a tab inside code or text does not survive as a tab:
+1
+2
+3
+13
+# Only a few dozen named character references are known (all numeric ones are), so &Dcaron; and its kin stay literal:
+25
