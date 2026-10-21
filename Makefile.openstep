@@ -1,8 +1,8 @@
 # Build MarkStep (md2rtf) on OPENSTEP 4.2 (gcc 2.7.2).  Works with NeXT make or GNU make.
 #
 #   make -f Makefile.openstep test      # FIRST: the unit tests and the CommonMark examples on the real compiler
-#   make -f Makefile.openstep           # build md2rtf
-#   make -f Makefile.openstep install   # md2rtf into /usr/local/bin (see below)
+#   make -f Makefile.openstep           # build md2rtf and rtf2md
+#   make -f Makefile.openstep install   # md2rtf and rtf2md into /usr/local/bin (see below)
 #   make -f Makefile.openstep fat       # md2rtf as an i386+m68k+sparc fat binary
 #   make -f Makefile.openstep clean
 #
@@ -19,17 +19,20 @@ CFLAGS   = $(OPT) -Wall $(DEFS) $(ARCHS) -Icore
 VERSION  = 0.1.0
 BINDIR   = /usr/local/bin
 
-CORE_OBJS = core/md.o core/md_util.o core/md_block.o core/md_inline.o core/md_html.o core/md_rtf.o core/nsenc.o
+CORE_OBJS = core/md.o core/md_util.o core/md_block.o core/md_inline.o core/md_html.o core/md_rtf.o core/rtf_in.o core/nsenc.o
 
 .SUFFIXES: .c .o
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
-all: md2rtf
+all: md2rtf rtf2md
 
 md2rtf: $(CORE_OBJS) tools/md2rtf.o
 	$(CC) $(ARCHS) -o md2rtf tools/md2rtf.o $(CORE_OBJS)
+
+rtf2md: $(CORE_OBJS) tools/rtf2md.o
+	$(CC) $(ARCHS) -o rtf2md tools/rtf2md.o $(CORE_OBJS)
 
 # ---- tests (plain C) ----
 # NOTE: OPENSTEP's mkdir has no -p option (it would create a directory named "-p").
@@ -37,33 +40,42 @@ build/test_md: tests/test_md.c $(CORE_OBJS)
 	-mkdir build
 	$(CC) $(CFLAGS) -o build/test_md tests/test_md.c $(CORE_OBJS)
 
+build/test_rtf_in: tests/test_rtf_in.c $(CORE_OBJS)
+	-mkdir build
+	$(CC) $(CFLAGS) -o build/test_rtf_in tests/test_rtf_in.c $(CORE_OBJS)
+
 build/spec_run: tests/spec_run.c $(CORE_OBJS)
 	-mkdir build
 	$(CC) $(CFLAGS) -o build/spec_run tests/spec_run.c $(CORE_OBJS)
 
-test: build/test_md build/spec_run
+test: build/test_md build/test_rtf_in build/spec_run
 	build/test_md
+	build/test_rtf_in
 	build/spec_run tests/spec_cases.txt tests/spec_known_failures.txt
 
-install: md2rtf
+install: md2rtf rtf2md
 	cp md2rtf $(BINDIR)/md2rtf
 	@echo "installed: $(BINDIR)/md2rtf"
 
 # One cc invocation per architecture, joined with lipo (NeXT's cc has no per-arch flag scoping, and objects are per-arch).
 fat:
 	rm -f core/*.o tools/*.o
-	$(MAKE) -f Makefile.openstep ARCHS="-arch i386" md2rtf
+	$(MAKE) -f Makefile.openstep ARCHS="-arch i386" md2rtf rtf2md
 	mv md2rtf md2rtf.i386
+	mv rtf2md rtf2md.i386
 	rm -f core/*.o tools/*.o
-	$(MAKE) -f Makefile.openstep ARCHS="-arch m68k" md2rtf
+	$(MAKE) -f Makefile.openstep ARCHS="-arch m68k" md2rtf rtf2md
 	mv md2rtf md2rtf.m68k
+	mv rtf2md rtf2md.m68k
 	rm -f core/*.o tools/*.o
-	$(MAKE) -f Makefile.openstep ARCHS="-arch sparc" md2rtf
+	$(MAKE) -f Makefile.openstep ARCHS="-arch sparc" md2rtf rtf2md
 	mv md2rtf md2rtf.sparc
+	mv rtf2md rtf2md.sparc
 	lipo -create md2rtf.i386 md2rtf.m68k md2rtf.sparc -output md2rtf
-	rm -f md2rtf.i386 md2rtf.m68k md2rtf.sparc core/*.o tools/*.o
-	@echo "built a fat md2rtf"
+	lipo -create rtf2md.i386 rtf2md.m68k rtf2md.sparc -output rtf2md
+	rm -f md2rtf.i386 md2rtf.m68k md2rtf.sparc rtf2md.i386 rtf2md.m68k rtf2md.sparc core/*.o tools/*.o
+	@echo "built fat md2rtf and rtf2md"
 
 clean:
-	rm -f core/*.o tools/*.o md2rtf md2rtf.i386 md2rtf.m68k md2rtf.sparc
+	rm -f core/*.o tools/*.o md2rtf md2rtf.i386 md2rtf.m68k md2rtf.sparc rtf2md rtf2md.i386 rtf2md.m68k rtf2md.sparc
 	rm -rf build

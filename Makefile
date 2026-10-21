@@ -3,7 +3,7 @@
 CC      ?= cc
 CFLAGS  = -std=c89 -pedantic -Wall -Wextra -Wdeclaration-after-statement -Wno-long-long -Wno-unused-parameter -O2 -g -Icore
 BUILD   = build
-CORE    = core/md.c core/md_util.c core/md_block.c core/md_inline.c core/md_html.c core/md_rtf.c core/nsenc.c
+CORE    = core/md.c core/md_util.c core/md_block.c core/md_inline.c core/md_html.c core/md_rtf.c core/rtf_in.c core/nsenc.c
 COREOBJ = $(patsubst core/%.c,$(BUILD)/%.o,$(CORE))
 
 all: test
@@ -20,14 +20,21 @@ $(BUILD)/spec_run: tests/spec_run.c $(COREOBJ)
 $(BUILD)/test_md: tests/test_md.c tests/test.h $(COREOBJ)
 	$(CC) $(CFLAGS) tests/test_md.c $(COREOBJ) -o $@
 
+$(BUILD)/test_rtf_in: tests/test_rtf_in.c tests/test.h $(COREOBJ)
+	$(CC) $(CFLAGS) tests/test_rtf_in.c $(COREOBJ) -o $@
+
 $(BUILD)/md2rtf: tools/md2rtf.c $(COREOBJ)
 	$(CC) $(CFLAGS) tools/md2rtf.c $(COREOBJ) -o $@
 
-all: $(BUILD)/md2rtf
+$(BUILD)/rtf2md: tools/rtf2md.c $(COREOBJ)
+	$(CC) $(CFLAGS) tools/rtf2md.c $(COREOBJ) -o $@
 
-test: $(BUILD)/spec_run $(BUILD)/test_md
+all: $(BUILD)/md2rtf $(BUILD)/rtf2md
+
+test: $(BUILD)/spec_run $(BUILD)/test_md $(BUILD)/test_rtf_in
 	$(BUILD)/spec_run tests/spec_cases.txt tests/spec_known_failures.txt
 	$(BUILD)/test_md
+	$(BUILD)/test_rtf_in
 
 lint:
 	sh tools/lint_openstep.sh
